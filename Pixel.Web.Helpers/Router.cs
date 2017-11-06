@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Web;
@@ -92,6 +93,16 @@ namespace Pixel.Web.Helpers
                     {
                         case RequestType.HttpPost:
                             formData = _context.Request.Form;
+                            if (!formData.AllKeys.Any())
+                            {
+                                formData = new NameValueCollection();
+                                var content = new StreamReader(_context.Request.InputStream).ReadToEnd();
+                                foreach (var s in content.Split(new string[] { "&" }, StringSplitOptions.RemoveEmptyEntries))
+                                {
+                                    var prms = s.Split(new string[] { "=" }, StringSplitOptions.RemoveEmptyEntries);
+                                    formData.Add(prms[0], prms[1]);
+                                }
+                            }
                             break;
                         case RequestType.HttpGet:
                             formData = _context.Request.QueryString;
