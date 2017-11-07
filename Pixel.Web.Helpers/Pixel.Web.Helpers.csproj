@@ -49,16 +49,21 @@
     <Compile Include="Attributes\RequestType.cs" />
     <Compile Include="Attributes\ResponseMethodAttribute.cs" />
     <Compile Include="Controller.cs" />
+    <Compile Include="Http\RequestBinder\JsonRequestBinder.cs" />
+    <Compile Include="Http\RequestBinder\FormRequestBinder.cs" />
+    <Compile Include="Http\RequestBinder\PlainTextRequestBinder.cs" />
+    <Compile Include="Http\RequestBinder\XmlRequestBinder.cs" />
     <Compile Include="RequestProcessor\HttpGetProcessor.cs" />
     <Compile Include="RequestProcessor\IRequestProcessor.cs" />
-    <Compile Include="Responders\FileResponder.cs" />
-    <Compile Include="Responders\IResponder.cs" />
-    <Compile Include="Responders\JsonResponder.cs" />
-    <Compile Include="Responders\PlainTextResponder.cs" />
+    <Compile Include="Http\Responders\FileResponder.cs" />
+    <Compile Include="Http\RequestBinder\IRequestBinder.cs" />
+    <Compile Include="Http\Responders\IResponder.cs" />
+    <Compile Include="Http\Responders\JsonResponder.cs" />
+    <Compile Include="Http\Responders\PlainTextResponder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Route.cs" />
     <Compile Include="Router.cs" />
-    <Compile Include="Responders\XmlResponder.cs" />
+    <Compile Include="Http\Responders\XmlResponder.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Pixel.Utils\Pixel.Utils.csproj">

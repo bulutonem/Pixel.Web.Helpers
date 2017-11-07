@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Web;
 using Pixel.Utils;
 using Pixel.Web.Helpers.Attributes;
-using Pixel.Web.Helpers.Responders;
+using Pixel.Web.Helpers.Http.RequestBinder;
+using Pixel.Web.Helpers.Http.Responders;
 
 namespace Pixel.Web.Helpers
 {
@@ -26,10 +29,18 @@ namespace Pixel.Web.Helpers
         private readonly Dictionary<string, IResponder> _contentResponder = new Dictionary<string, IResponder>
         {
             { "",new PlainTextResponder()},
+            { "*/*",new JsonResponder()},
             {"application/json",new JsonResponder() },
             {"text/plain",new PlainTextResponder() },
             {"text/xml", new XmlResponder() },
             {"image",new FileResponder(null) }
+        };
+        private readonly Dictionary<string, IRequestBinder> _requestBinders = new Dictionary<string, IRequestBinder>
+        {
+            { "application/x-www-form-urlencoded",new FormRequestBinder()},
+            {"application/json",new JsonRequestBinder() },
+            {"text/plain",new FormRequestBinder() },
+            {"text/xml", new XmlRequestBinder() }
         };
 
         public Router(Assembly runningAssembly)
@@ -102,28 +113,16 @@ namespace Pixel.Web.Helpers
                 }
                 else
                 {
-                    NameValueCollection formData = null;
-                    switch (_currentRoute.RequestType)
+                    if (_requestBinders.ContainsKey(_currentRoute.ContentType.ToLower()))
                     {
-                        case RequestType.HttpPost:
-                            formData = _context.Request.Form;
-                            if (!formData.AllKeys.Any())
-                            {
-                                formData = new NameValueCollection();
-                                var content = new StreamReader(_context.Request.InputStream).ReadToEnd();
-                                foreach (var s in content.Split(new[] { "&" }, StringSplitOptions.RemoveEmptyEntries))
-                                {
-                                    var prms = s.Split(new[] { "=" }, StringSplitOptions.RemoveEmptyEntries);
-                                    formData.Add(prms[0], prms[1]);
-                                }
-                            }
-                            break;
-                        case RequestType.HttpGet:
-                            formData = _context.Request.QueryString;
-                            break;
+                        var binder = _requestBinders[_currentRoute.ContentType.ToLower()];
+                        parameters[i] = binder.Bind(_context, t);
                     }
-                    var pVal = typeof(ObjectBinder).GetMethod("BindObject")?.MakeGenericMethod(t).Invoke(this, new object[] { formData });
-                    parameters[i] = pVal;
+                    else
+                    {
+                        EndResponse(HttpStatusCode.BadRequest,
+                            $"Invalid content type. Content type can be one of these {string.Join("<br/>", _requestBinders.Keys.Select(k => k))}");
+                    }
                 }
             }
             return parameters;
@@ -161,43 +160,70 @@ namespace Pixel.Web.Helpers
                             Action = action,
                             RequestType = currentRequestType,
                             Path = _context.Request.Url.AbsolutePath,
-                            Parameters = parameters
+                            Parameters = parameters,
+                            ContentType = _context.Request.ContentType
                         };
                         _currentRoute = route;
-                        if (_contentResponder.ContainsKey(route.ContentType.ToLower()))
-                            _responder = _contentResponder[route.ContentType];
-                        else
+                        if (_context.Request.AcceptTypes != null)
+                            foreach (var requestAcceptType in _context.Request.AcceptTypes)
+                            {
+                                if (_contentResponder.ContainsKey(requestAcceptType.ToLower()))
+                                {
+                                    _responder = _contentResponder[requestAcceptType];
+                                    break;
+                                }
+                            }
+                        if (_responder == null)
                         {
-                            throw new Exception("Unknown content type");
+                            _responder = _contentResponder[route.DefaultResponseContentType];
                         }
                     }
                     else
                     {
-                        EndResponse(404);
+                        EndResponse(HttpStatusCode.NotFound);
                     }
                 }
                 else
                 {
-                    EndResponse(404);
+                    EndResponse(HttpStatusCode.NotFound);
                 }
             }
             else
             {
-                EndResponse(404);
+                EndResponse(HttpStatusCode.NotFound);
             }
         }
 
-        private void EndResponse(int statusCode)
+        private void EndResponse(HttpStatusCode statusCode)
         {
-            _context.Response.StatusCode = statusCode;
+            if (!Enum.IsDefined(typeof(HttpStatusCode), statusCode))
+                throw new InvalidEnumArgumentException(nameof(statusCode), (int)statusCode, typeof(HttpStatusCode));
+            _context.Response.StatusCode = (int)statusCode;
+            _context.Response.End();
+        }
+
+        private void EndResponse(HttpStatusCode statusCode, string message)
+        {
+            if (!Enum.IsDefined(typeof(HttpStatusCode), statusCode))
+                throw new InvalidEnumArgumentException(nameof(statusCode), (int)statusCode, typeof(HttpStatusCode));
+            _context.Response.StatusCode = (int)statusCode;
+            _context.Response.Status = message;
             _context.Response.End();
         }
 
         public void ProcessRequest()
         {
-            var actionParameters = GetParameters();
-            var result = _currentRoute.Action.Invoke(_currentRoute.Controller, actionParameters);
-            AfterActionExecuting(result);
+            if (_segments == null || _controller == null || string.IsNullOrEmpty(_actionName))
+            {
+                _context.Response.Clear();
+                EndResponse(HttpStatusCode.NotFound);
+            }
+            else
+            {
+                var actionParameters = GetParameters();
+                var result = _currentRoute.Action.Invoke(_currentRoute.Controller, actionParameters);
+                AfterActionExecuting(result);
+            }
 
         }
         public void AfterActionExecuting(object responseData)

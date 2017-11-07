@@ -11,7 +11,8 @@ namespace Pixel.Web.Helpers
         public MethodInfo Action { get; set; }
         public Type[] Parameters { get; set; }
         public RequestType RequestType { get; set; }
-        public string ContentType { get; set; } = "application/json";
+        public string ContentType { get; set; }
+        public string DefaultResponseContentType { get; set; } = "application/json";
         public int CacheTime { get; set; } = 0;
         public bool HasCaptcha { get; set; }
     }

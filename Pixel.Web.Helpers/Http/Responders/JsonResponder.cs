@@ -1,6 +1,6 @@
 ﻿using System.Web;
 
-namespace Pixel.Web.Helpers.Responders
+namespace Pixel.Web.Helpers.Http.Responders
 {
     public class JsonResponder : IResponder
     {
