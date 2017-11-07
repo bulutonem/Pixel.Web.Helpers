@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Web;
 using Pixel.Utils;
 using Pixel.Web.Helpers.Attributes;
@@ -38,6 +39,7 @@ namespace Pixel.Web.Helpers
         private readonly Dictionary<string, IRequestBinder> _requestBinders = new Dictionary<string, IRequestBinder>
         {
             { "application/x-www-form-urlencoded",new FormRequestBinder()},
+            { "multipart/form-data",new FormRequestBinder()},
             {"application/json",new JsonRequestBinder() },
             {"text/plain",new FormRequestBinder() },
             {"text/xml", new XmlRequestBinder() }
@@ -120,8 +122,19 @@ namespace Pixel.Web.Helpers
                     }
                     else
                     {
-                        EndResponse(HttpStatusCode.BadRequest,
-                            $"Invalid content type. Content type can be one of these {string.Join("<br/>", _requestBinders.Keys.Select(k => k))}");
+                        if (Regex.IsMatch(_currentRoute.ContentType.ToLower(), $"^({string.Join("|", _requestBinders.Keys.ToArray())})"))
+                        {
+                            var matches = Regex.Matches(_currentRoute.ContentType.ToLower(), $"^({string.Join("|", _requestBinders.Keys.ToArray())})");
+                            if (matches.Count > 0)
+                            {
+                                var binder = _requestBinders[matches[0].Value];
+                                parameters[i] = binder.Bind(_context, t);
+                            }
+                        }
+                        else
+                        {
+                            EndResponse(HttpStatusCode.BadRequest, $"Invalid content type. Content type can be one of these {string.Join("<br/>", _requestBinders.Keys.ToArray())}");
+                        }
                     }
                 }
             }
@@ -207,7 +220,7 @@ namespace Pixel.Web.Helpers
             if (!Enum.IsDefined(typeof(HttpStatusCode), statusCode))
                 throw new InvalidEnumArgumentException(nameof(statusCode), (int)statusCode, typeof(HttpStatusCode));
             _context.Response.StatusCode = (int)statusCode;
-            _context.Response.Status = message;
+            _context.Response.StatusDescription = message;
             _context.Response.End();
         }
 

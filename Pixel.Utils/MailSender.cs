@@ -89,5 +89,22 @@ namespace Pixel.Utils
         {
             SendMail(new[] { to }, subject, body, client);
         }
+
+        public static void SendMail(MailMessage mail)
+        {
+            SmtpClient smtpClient = new SmtpClient();
+            using (MailMessage message = new MailMessage())
+            {
+                smtpClient.Send(mail);
+            }
+        }
+        public static void SendMail(MailMessage mail, SmtpClient client)
+        {
+            SmtpClient smtpClient = client;
+            using (MailMessage message = new MailMessage())
+            {
+                smtpClient.Send(mail);
+            }
+        }
     }
 }
