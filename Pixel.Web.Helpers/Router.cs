@@ -15,6 +15,7 @@ namespace Pixel.Web.Helpers
     public class Router
     {
         private string _controllerName, _actionName;
+        private string[] _segments;
         private readonly string _applicationRootPath;
         private readonly HttpContext _context;
         private Route _currentRoute;
@@ -22,7 +23,7 @@ namespace Pixel.Web.Helpers
         private Controller _controller;
         private IResponder _responder;
 
-        private readonly Dictionary<string, IResponder> _contentResponder = new Dictionary<string, IResponder>()
+        private readonly Dictionary<string, IResponder> _contentResponder = new Dictionary<string, IResponder>
         {
             { "",new PlainTextResponder()},
             {"application/json",new JsonResponder() },
@@ -36,38 +37,51 @@ namespace Pixel.Web.Helpers
             _applicationRootPath = string.Empty;
             _context = HttpContext.Current;
             _runningAssembly = runningAssembly;
-            GetSegments();
-            SetRoute();
+            SetSegments();
+            if (_segments != null)
+            {
+                SetRoute();
+            }
         }
         public Router(string applicationRootPath, Assembly runningAssembly)
         {
             _applicationRootPath = applicationRootPath;
             _context = HttpContext.Current;
             _runningAssembly = runningAssembly;
-            GetSegments();
-            SetRoute();
+            SetSegments();
+            if (_segments != null)
+            {
+                SetRoute();
+            }
         }
 
         public string ControllerName => _controllerName;
         public string ActionName => _actionName.ToLower(new CultureInfo("en-US"));
 
-        public string[] GetSegments()
+        public void SetSegments()
         {
             string[] segments = HttpContext.Current.Request.Url.Segments.Select(x => x.ToLower(new CultureInfo("en-US")).Replace("/", string.Empty)).ToArray();
-            if (string.IsNullOrEmpty(_applicationRootPath))
+            if (segments.Length > 2)
             {
-                segments = segments.Skip(2).ToArray();
+                if (string.IsNullOrEmpty(_applicationRootPath))
+                {
+                    segments = segments.Skip(2).ToArray();
+                }
+                else
+                {
+                    var indexOfRootPath =
+                        Array.IndexOf(segments, _applicationRootPath.ToLower(new CultureInfo("en-US")));
+                    segments = segments.Skip(indexOfRootPath + 1).ToArray();
+                }
+
+                _controllerName = segments[0];
+                _actionName = segments[1];
             }
             else
             {
-                var indexOfRootPath = Array.IndexOf(segments, _applicationRootPath.ToLower(new CultureInfo("en-US")));
-                segments = segments.Skip(indexOfRootPath + 1).ToArray();
+                segments = null;
             }
-
-            _controllerName = segments[0];
-            _actionName = segments[1];
-
-            return segments;
+            _segments = segments;
         }
 
         private object[] GetParameters()
@@ -97,9 +111,9 @@ namespace Pixel.Web.Helpers
                             {
                                 formData = new NameValueCollection();
                                 var content = new StreamReader(_context.Request.InputStream).ReadToEnd();
-                                foreach (var s in content.Split(new string[] { "&" }, StringSplitOptions.RemoveEmptyEntries))
+                                foreach (var s in content.Split(new[] { "&" }, StringSplitOptions.RemoveEmptyEntries))
                                 {
-                                    var prms = s.Split(new string[] { "=" }, StringSplitOptions.RemoveEmptyEntries);
+                                    var prms = s.Split(new[] { "=" }, StringSplitOptions.RemoveEmptyEntries);
                                     formData.Add(prms[0], prms[1]);
                                 }
                             }
@@ -141,12 +155,14 @@ namespace Pixel.Web.Helpers
                         var actionParameters = action.GetParameters();
                         Type[] parameters = actionParameters.Select(t => t.ParameterType).ToArray();
 
-                        var route = new Route();
-                        route.Controller = _controller;
-                        route.Action = action;
-                        route.RequestType = currentRequestType;
-                        route.Path = _context.Request.Url.AbsolutePath;
-                        route.Parameters = parameters;
+                        var route = new Route
+                        {
+                            Controller = _controller,
+                            Action = action,
+                            RequestType = currentRequestType,
+                            Path = _context.Request.Url.AbsolutePath,
+                            Parameters = parameters
+                        };
                         _currentRoute = route;
                         if (_contentResponder.ContainsKey(route.ContentType.ToLower()))
                             _responder = _contentResponder[route.ContentType];
