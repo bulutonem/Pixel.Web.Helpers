@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Reflection;
 using System.Web;
 
@@ -9,6 +8,8 @@ namespace Pixel.Web.Helpers
 {
     public abstract class Controller : IDisposable
     {
+        public string ApplicationRootPath { get; }
+
         //private Router _router;
         private readonly HttpContext _context;
 
@@ -20,14 +21,15 @@ namespace Pixel.Web.Helpers
             _context = HttpContext.Current;
             //_router = new Router();
 
-            Actions = this.GetType().GetMethods().ToList();
+            Actions = GetType().GetMethods().ToList();
         }
 
         protected Controller(string applicationRootPath)
         {
+            ApplicationRootPath = applicationRootPath;
             _context = HttpContext.Current;
             //_router = new Router(applicationRootPath);
-            Actions = this.GetType().GetMethods().ToList();
+            Actions = GetType().GetMethods().ToList();
         }
 
         public void Dispose()
