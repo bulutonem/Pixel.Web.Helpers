@@ -74,20 +74,20 @@ namespace Pixel.Utils
 
         public static void SendMail(string to, string subject, XmlDocument bodyXml, string xslPath)
         {
-            SendMail(new string[] { to }, subject, bodyXml, xslPath);
+            SendMail(new[] { to }, subject, bodyXml, xslPath);
         }
         public static void SendMail(string to, string subject, XmlDocument bodyXml, string xslPath, SmtpClient client)
         {
-            SendMail(new string[] { to }, subject, bodyXml, xslPath, client);
+            SendMail(new[] { to }, subject, bodyXml, xslPath, client);
         }
 
         public static void SendMail(string to, string subject, string body)
         {
-            SendMail(new string[1] { to }, subject, body);
+            SendMail(new[] { to }, subject, body);
         }
         public static void SendMail(string to, string subject, string body, SmtpClient client)
         {
-            SendMail(new string[1] { to }, subject, body, client);
+            SendMail(new[] { to }, subject, body, client);
         }
     }
 }
