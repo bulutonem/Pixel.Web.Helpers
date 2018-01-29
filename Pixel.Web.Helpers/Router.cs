@@ -147,7 +147,7 @@ namespace Pixel.Web.Helpers
             var controller = _runningAssembly.GetTypes()
                 .FirstOrDefault(c => c.BaseType == typeof(Controller) &&
                                      (c.Name == _controllerName.ToCapitalCase() ||
-                                      c.Name == _controllerName.ToCapitalCase() + "Controller"));
+                                      c.Name.Replace("Controller", string.Empty).ToLower() == _controllerName.ToLower()));
             if (controller != null)
             {
                 _controller = (Controller)Activator.CreateInstance(controller);
