@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Web;
 using Pixel.Utils;
 using Pixel.Utils.Serializers;
@@ -12,6 +13,13 @@ namespace Pixel.Web.Helpers.Http.RequestBinder
         {
             var streamContent = new StreamReader(context.Request.InputStream).ReadToEnd();
             return Utils.Serializers.XmlSerializerUtil.DeserializeObject<T>(streamContent);
+        }
+
+        public object Bind(HttpContext context, Type type, Assembly assembly)
+        {
+            var streamContent = new StreamReader(context.Request.InputStream).ReadToEnd();
+            var pVal = typeof(XmlSerializerUtil).GetMethod("DeserializeObject")?.MakeGenericMethod(type).Invoke(this, new object[] { streamContent, assembly });
+            return pVal;
         }
 
         public object Bind(HttpContext context, Type type)

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Specialized;
+using System.Reflection;
 using System.Web;
 using Pixel.Utils;
 
@@ -15,7 +17,7 @@ namespace Pixel.Web.Helpers.Http.RequestBinder
 
         public object Bind(HttpContext context, Type type)
         {
-            var data = context.Request.Form;
+            var data = new NameValueCollection { context.Request.Form, context.Request.QueryString };
             var pVal = typeof(ObjectBinder).GetMethod("BindObject")?.MakeGenericMethod(type).Invoke(this, new object[] { data });
             return pVal;
         }

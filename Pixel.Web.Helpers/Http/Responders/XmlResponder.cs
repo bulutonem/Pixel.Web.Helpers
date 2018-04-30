@@ -1,4 +1,5 @@
 ﻿using System.Web;
+using System.Xml;
 
 namespace Pixel.Web.Helpers.Http.Responders
 {
@@ -6,7 +7,16 @@ namespace Pixel.Web.Helpers.Http.Responders
     {
         public void Write(HttpContext context, object data)
         {
-            context.Response.Write(Pixel.Utils.Serializers.XmlSerializerUtil.SerializeObject(data).InnerXml);
+            XmlDocument result;
+            if (data.GetType() == typeof(XmlDocument))
+            {
+                result = (XmlDocument)data;
+            }
+            else
+            {
+                result = Pixel.Utils.Serializers.XmlSerializerUtil.SerializeObject(data);
+            }
+            context.Response.Write(result.InnerXml);
         }
     }
 }

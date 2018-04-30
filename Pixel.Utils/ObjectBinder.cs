@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Linq;
 
 namespace Pixel.Utils
 {
@@ -8,6 +11,28 @@ namespace Pixel.Utils
         public static T BindObject<T>(NameValueCollection form)
         {
             T obj = (T)Activator.CreateInstance(typeof(T));
+            if (form != null)
+            {
+                foreach (var prp in obj.GetType().GetProperties())
+                {
+                    if (!string.IsNullOrEmpty(form[prp.Name]))
+                        if (prp.PropertyType == typeof(String) || prp.PropertyType == typeof(string))
+                        {
+                            prp.SetValue(obj, form[prp.Name]);
+                        }
+                        else if (form[prp.Name] != null)
+                        {
+                            Type t = Nullable.GetUnderlyingType(prp.PropertyType) ?? prp.PropertyType;
+                            var safeValue = form[prp.Name] == null ? null : Convert.ChangeType(form[prp.Name], t);
+                            prp.SetValue(obj, safeValue, null);
+                        }
+                }
+            }
+            return obj;
+        }
+        public static object BindObject(NameValueCollection form, Type type)
+        {
+            var obj = Activator.CreateInstance(type);
             if (form != null)
             {
                 foreach (var prp in obj.GetType().GetProperties())

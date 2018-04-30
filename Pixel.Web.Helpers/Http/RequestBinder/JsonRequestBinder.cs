@@ -1,7 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Web;
-using Pixel.Utils.Serializers;
+using Newtonsoft.Json;
 
 namespace Pixel.Web.Helpers.Http.RequestBinder
 {
@@ -14,11 +15,18 @@ namespace Pixel.Web.Helpers.Http.RequestBinder
             return Utils.Serializers.JsonSerializer.DeserializeObject<T>(streamContent);
         }
 
+        public object Bind(HttpContext context, Type type, Assembly assembly)
+        {
+            var streamContent = new StreamReader(context.Request.InputStream).ReadToEnd();
+            var obj = JsonConvert.DeserializeObject(streamContent, type);
+            return obj;
+        }
+
         public object Bind(HttpContext context, Type type)
         {
             var streamContent = new StreamReader(context.Request.InputStream).ReadToEnd();
-            var pVal = typeof(JsonSerializer).GetMethod("DeserializeObject")?.MakeGenericMethod(type).Invoke(this, new object[] { streamContent });
-            return pVal;
+            var obj = JsonConvert.DeserializeObject(streamContent, type);
+            return obj;
         }
     }
 }

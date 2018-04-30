@@ -2,6 +2,7 @@
 
 namespace Pixel.Web.Helpers.Attributes
 {
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public abstract class ResponseMethodAttribute : Attribute
     {
         public RequestType RequestType { get; set; }

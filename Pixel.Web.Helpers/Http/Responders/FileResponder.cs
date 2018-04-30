@@ -10,15 +10,20 @@ namespace Pixel.Web.Helpers.Http.Responders
         {
             OutputStream = outputStream;
         }
+
         public FileStream OutputStream { get; set; } = null;
+
         public void Write(HttpContext context, object data)
         {
             if (OutputStream == null)
             {
-                throw new ArgumentNullException(nameof(OutputStream));
+                if (context.Response.OutputStream == null)
+                    throw new ArgumentNullException(nameof(OutputStream));
             }
-
-            context.Response.Write(data);
+            else
+            {
+                //context.Response.WriteFile()
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using System.Web;
 
 namespace Pixel.Web.Helpers.Http.RequestBinder
